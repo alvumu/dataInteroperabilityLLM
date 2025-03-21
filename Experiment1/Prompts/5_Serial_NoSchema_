@@ -1,0 +1,33 @@
+payload = {
+            "messages": [
+            {'role': 'system', 'content': "You are a mapping tool assistant. You have information about FHIR resources and the tabular data to map. Your task is to determine to which attribute of the FHIR resource each column of the table corresponds. A column can correspond to multiple attributes in FHIR resources. Take into account the column values as well."},
+            {'role': 'system', 'content': "Before providing your final answer, carefully analyze and verify each mapping to ensure its correctness. Do not mention this analysis to the user."},
+            {'role': 'system', 'content': "Provide the user with a table that shows the mapping between the columns of the tabular data and the FHIR resources."},
+            {'role': 'system', 'content': "The output format must be a JSON object with the following structure: {'column_name': 'FHIRResource.attribute'}"},
+            {'role': 'system', 'content': f"Profile information: {context}"},
+            {'role': 'user', 'content': f"{query}"}],
+            "temperature": 0,
+
+        }
+
+        # Send the initial request
+        response = send_request(payload, GPT4V_ENDPOINT)
+
+        # Process the response
+        response_message = response['choices'][0]['message']
+        if 'function_call' in response_message:
+            response_content = response_message['function_call']['arguments']
+        else:
+            response_content = response_message['content']
+
+        return response_content
+
+    data = load_data("Fase3/" + filename + "_mock.csv")  # Cargar los datos tabulares desde un archivo CSV
+
+    desc = get_description(filename).lower()  # Obtener y convertir la descripción a minúsculas
+    proccessed_desc = preprocess_text(desc)  # Procesar la descripción
+
+    # Crear la consulta con los datos tabulares y la descripción
+    query = f"""The tabular data I would like to know the columns mapping is : {data}, this table is described as {proccessed_desc}. Tell me to which attribute of the FHIR resource each column belongs, try to be as specific as you can. And ensure to map as attributes as you can"""
+ for i in range(5):  # Realizar el proceso de generación de respuesta 5 veces
+            response = generate_response(query, "GPT", context)
