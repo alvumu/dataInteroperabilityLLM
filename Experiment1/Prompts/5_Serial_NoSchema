@@ -1,0 +1,61 @@
+        # Initial prompt
+        payload = {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a mapping assistant. Your task is to determine to which attribute(s) of the FHIR resource each column of the provided table corresponds. "
+                        "A column can correspond to multiple attributes in FHIR resources. Do not include the data values, only provide the mapping between column names and FHIR attribute names."
+                        "The output format must be a JSON object with the following structure: {'column_name': 'FHIRResource.attribute'}"
+                        "Do not map the values of the columns, only the column names."
+                        "Do not create new attributes or modify the existing ones. Do not repeat the table attributes in the mapping."
+                    )
+                },
+                {
+                    "role": "system",
+                    "content": (
+                        "Provide your final answer as a JSON object that maps each column name to an array of corresponding FHIR attribute names, conforming to the provided JSON structure."
+                    )
+                },
+                {"role": "system", "content": f"Profile information: {context}"},
+                {"role": "user", "content": f"{query}"}
+            ],
+            "temperature": 0,
+        }
+
+        # Send the initial request
+        response = send_request(payload, GPT4V_ENDPOINT)
+
+        # Process the response
+        response_message = response['choices'][0]['message']
+        if 'function_call' in response_message:
+            response_content = response_message['function_call']['arguments']
+        else:
+            response_content = response_message['content']
+
+        # Loop through iterations of reflection (if needed)
+        for i in range(iterations):
+            reflection_payload = {
+                "messages": [
+                    {"role": "system", "content": f"Iteration {i+1}: You provided the following mapping:"},
+                    {"role": "assistant", "content": response_content},
+                    {
+                        "role": "system",
+                        "content": (
+                            "Reflect on this mapping. Identify any inconsistencies, possible improvements, or errors, and provide a corrected version. "
+                            "Present your final answer as a JSON object that conforms to the provided JSON structure."
+                        )
+                    },
+                ],
+                "temperature": 0,
+            }
+            
+    data = load_data("Fase3/" + filename + "_mock.csv")  # Cargar los datos tabulares desde un archivo CSV
+
+    desc = get_description(filename).lower()  # Obtener y convertir la descripción a minúsculas
+    proccessed_desc = preprocess_text(desc)  # Procesar la descripción
+
+    # Crear la consulta con los datos tabulares y la descripción
+    query = f"""The tabular data I would like to know the columns mapping is : {data}, this table is described as {proccessed_desc}. Tell me to which attribute of the FHIR resource each column belongs, try to be as specific as you can. And ensure to map as attributes as you can"""
+
+    response = generate_response(query, "GPT", context, 5)
