@@ -107,8 +107,6 @@ for i in range(iterations):
         query += f"Sample Values: {values}\n"
         query += "----------------------------------------\n"
 
-    #table_description = generate_description(query)
-    #print("Table Description:", table_description)
 
     query += """
     ##################### TASK ##################
