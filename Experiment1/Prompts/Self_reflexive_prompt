@@ -59,3 +59,12 @@
                 "functions": functions,
                 "function_call": {"name": "generate_column_mapping"}
             }
+
+
+    data = load_data("Fase3/data_mock/" + filename + "_mock.csv")  # Cargar los datos tabulares desde un archivo CSV
+
+    desc = get_description(filename).lower()  # Obtener y convertir la descripción a minúsculas
+    proccessed_desc = preprocess_text(desc)  # Procesar la descripción
+
+    # Crear la consulta con los datos tabulares y la descripción
+    query = f"""The tabular data I would like to know the columns mapping is : {data}, this table is described as {proccessed_desc}. Tell me to which attribute of the FHIR resource each column belongs, try to be as specific as you can. And ensure to map as attributes as you can"""
