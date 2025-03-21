@@ -1,0 +1,61 @@
+# Define the function according to your new JSON schema
+        functions = [
+            {
+                "name": "generate_column_mapping",
+                "description": "Generate a mapping between table column names and FHIR resource attribute names.",
+                "parameters": json_schema
+            }
+        ]
+
+        # Initial prompt
+        payload = {
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a mapping assistant. Your task is to determine to which attribute(s) of the FHIR resource each column of the provided table corresponds. "
+                        "A column can correspond to multiple attributes in FHIR resources. Do not include the data values, only provide the mapping between column names and FHIR attribute names."
+                    )
+                },
+                {
+                    "role": "system",
+                    "content": (
+                        "Provide your final answer as a JSON object that maps each column name to an array of corresponding FHIR attribute names, conforming to the provided JSON schema."
+                    )
+                },
+                {"role": "system", "content": f"Profile information: {context}"},
+                {"role": "user", "content": f"{query}"}
+            ],
+            "temperature": 0,
+            "functions": functions,
+            "function_call": {"name": "generate_column_mapping"}
+        }
+
+        # Send the initial request
+        response = send_request(payload, GPT4V_ENDPOINT)
+
+        # Process the response
+        response_message = response['choices'][0]['message']
+        if 'function_call' in response_message:
+            response_content = response_message['function_call']['arguments']
+        else:
+            response_content = response_message['content']
+
+        # Loop through iterations of reflection (if needed)
+        for i in range(iterations):
+            reflection_payload = {
+                "messages": [
+                    {"role": "system", "content": f"Iteration {i+1}: You provided the following mapping:"},
+                    {"role": "assistant", "content": response_content},
+                    {
+                        "role": "system",
+                        "content": (
+                            "Reflect on this mapping. Identify any inconsistencies, possible improvements, or errors, and provide a corrected version. "
+                            "Present your final answer as a JSON object that conforms to the provided JSON schema."
+                        )
+                    },
+                ],
+                "temperature": 0,
+                "functions": functions,
+                "function_call": {"name": "generate_column_mapping"}
+            }
